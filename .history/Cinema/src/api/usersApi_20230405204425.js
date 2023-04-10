@@ -22,7 +22,6 @@ const usersApi = {
 
   postThemNguoiDung: (user) => {
     const path = "/QuanLyNguoiDung/ThemNguoiDung";
-
     return axiosClient.post(path, user);
   },
 

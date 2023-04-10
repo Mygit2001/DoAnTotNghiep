@@ -48,8 +48,6 @@ const validateToken = (req, res) => {
     }
 }
 // quản lí rạp
-
-
 // quan li nguoi dung
 
 app.post('/api/QuanLyNguoiDung/DangKy', async (req, res) => {
