@@ -41,7 +41,6 @@ export default function Login() {
         taiKhoan: yup.string().required("*Tài khoản không được bỏ trống !"),
         matKhau: yup.string().required("*Mật khẩu không được bỏ trống !"),
     });
-
     const handleSubmit = (user) => {
         dispatch(login(user));
         // history.push("/", location.state);
