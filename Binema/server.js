@@ -48,7 +48,177 @@ const validateToken = (req, res) => {
     }
 }
 // quản lí rạp
+app.get('/api/QuanLyRap/LayThongTinHeThongRap', function (req, res) {
+    dbConn.query('SELECT * FROM hethongrap', [], function (error, results, fields) {
+        if (error) throw error;
+        return res.send(results);
+    });
+});
 
+app.get('/api/QuanLyRap/LayThongTinCumRapTheoHeThong', async (req, res) => {
+    const final = [];
+    dbConn.query('SELECT * FROM cumrap JOIN hethongrapvacumrap ON cumrap.cid = hethongrapvacumrap.cumrap JOIN hethongrap ON hethongrap.hid = hethongrapvacumrap.hethongrap WHERE hethongrap.maHeThongRap = ?', [req.query.maHeThongRap], async (error, results, fields) => {
+        if (error) throw error;
+        for(const result of results){
+            let danhSachRap = [];
+            danhSachRap = await new Promise((resolve, reject) => {
+                dbConn.query('SELECT * FROM danhsachrap WHERE maCumRap = ?', [result.cid], async (error, results1, fields) => {
+                    if (error) throw error;
+                    for (const result1 of results1){
+                        danhSachRap.push({
+                            "maRap": result1.maRap,
+                            "tenRap": result1.tenRap
+                        })
+                    }
+                    resolve(danhSachRap);
+                });
+            })
+            final.push({
+                "danhSachRap": danhSachRap,
+                "maCumRap": result.maCumRap,
+                "tenCumRap": result.tenCumRap,
+                "diaChi": result.diaChi,
+            })
+        }
+        return res.send(final);
+    });
+});
+
+app.get('/api/QuanLyRap/LayThongTinHeThongRap', function (req, res) {
+    dbConn.query('SELECT * FROM hethongrap', [], function (error, results, fields) {
+        if (error) throw error;
+        return res.send(results);
+    });
+});
+
+app.get('/api/QuanLyRap/LayThongTinLichChieuHeThongRap', function (req, res) {
+    const final = [];
+    dbConn.query('SELECT * FROM hethongrap', [], async (error, results, fields) => {
+        if (error) throw error;
+        for (const result of results){
+            let lstCumRap = [];
+            lstCumRap = await new Promise((resolve, reject) => {
+                dbConn.query('SELECT * FROM hethongrap JOIN hethongrapvacumrap ON hethongrap.hid = hethongrapvacumrap.hethongrap JOIN cumrap ON cumrap.cid = hethongrapvacumrap.cumrap WHERE hethongrap.hid = ?', [result.hid], async (error, results0, fields) => {
+                    if (error) throw error;
+                    for (const result0 of results0){
+                        let danhSachPhim = [];
+                        danhSachPhim = await new Promise((resolve, reject) => {
+                            dbConn.query('SELECT * FROM phiminsert JOIN hethongrapvaphim ON phiminsert.maPhim = hethongrapvaphim.maPhim JOIN hethongrap ON hethongrap.hid = hethongrapvaphim.maHeThongRap JOIN phiminsertvalichchieuinsert ON phiminsert.maPhim = phiminsertvalichchieuinsert.phiminsert JOIN cumrapvalichchieuinsert ON phiminsertvalichchieuinsert.lichchieuinsert = cumrapvalichchieuinsert.lichchieuinsert WHERE hethongrap.hid = ? AND cumrapvalichchieuinsert.cumrap = ?', [result0.hid, result0.cid], async (error, results1, fields) => {
+                                if (error) throw error;
+                                for (const result1 of results1){
+                                    let lstLichChieuTheoPhim = []
+                                    lstLichChieuTheoPhim = await new Promise((resolve, reject) => {
+                                        dbConn.query('SELECT * FROM lichchieuinsert JOIN phiminsertvalichchieuinsert ON lichchieuinsert.maLichChieu = phiminsertvalichchieuinsert.lichchieuinsert JOIN phiminsert ON phiminsert.maPhim = phiminsertvalichchieuinsert.phiminsert WHERE phiminsertvalichchieuinsert.phiminsert = ?', [result1.maPhim], async (error, results2, fields) => {
+                                            if (error) throw error;
+                                            for (const result2 of results2){
+                                                lstLichChieuTheoPhim.push({
+                                                    "maLichChieu": result2.maLichChieu,
+                                                    "maRap": result2.maRap,
+                                                    "tenRap": result2.tenRap,
+                                                    "ngayChieuGioChieu": result2.ngayChieuGioChieu,
+                                                    "giaVe": result2.giaVe,
+                                                })
+                                            }
+                                            resolve(lstLichChieuTheoPhim);
+                                        });
+                                    })
+                                    const phim = {
+                                        "lstLichChieuTheoPhim": lstLichChieuTheoPhim,
+                                        "maPhim": result1.maPhim,
+                                        "tenPhim": result1.tenPhim,
+                                        "hinhAnh": result1.hinhAnh
+                                        
+                                    }
+                                    danhSachPhim.push(phim)
+                                }
+                                resolve(danhSachPhim);
+                            });
+
+                        })
+                        const cumrap = {
+                            "danhSachPhim": danhSachPhim,
+                            "maCumRap": result0.maCumRap,
+                            "tenCumRap": result0.tenCumRap,
+                            "diaChi": result0.diaChi
+                        }
+                        lstCumRap.push(cumrap)
+                    }
+                    resolve(lstCumRap);
+                });
+            })
+            final.push({
+                "lstCumRap": lstCumRap,
+                "maHeThongRap": result.maHeThongRap,
+                "tenHeThongRap": result.tenHeThongRap,
+                "logo": result.logo,
+                "mahom": "GP09"
+            })
+        }
+        return res.send(final)
+    });
+});
+
+app.get('/api/QuanLyRap/LayThongTinLichChieuPhim', function (req, res) {
+    dbConn.query('SELECT * FROM phiminsert JOIN hethongrapvaphim ON phiminsert.maPhim = hethongrapvaphim.maPhim JOIN hethongrap ON hethongrap.hid = hethongrapvaphim.maHeThongRap WHERE phiminsert.maPhim = ?', [req.query.MaPhim], async (error, results0, fields) => {
+        if (error) throw error;
+        let heThongRapChieu = [];
+        for (const result0 of results0){
+            heThongRapChieu = await new Promise((resolve, reject) => {
+                dbConn.query('SELECT * FROM hethongrap JOIN hethongrapvacumrap ON hethongrap.hid = hethongrapvacumrap.hethongrap JOIN cumrap ON cumrap.cid = hethongrapvacumrap.cumrap JOIN cumrapvalichchieuinsert ON cumrap.cid = cumrapvalichchieuinsert.cumrap JOIN phiminsertvalichchieuinsert ON cumrapvalichchieuinsert.lichchieuinsert = phiminsertvalichchieuinsert.lichchieuinsert WHERE hethongrap.hid = ? AND phiminsertvalichchieuinsert.phiminsert = ?', [result0.hid, result0.maPhim], async (error, results1, fields) => {
+                    if (error) throw error;
+                    let cumRapChieu = []
+                    for (const result1 of results1){
+                        cumRapChieu = await new Promise((resolve, reject) => {
+                            dbConn.query('SELECT * FROM lichchieuinsert JOIN cumrapvalichchieuinsert ON lichchieuinsert.maLichChieu = cumrapvalichchieuinsert.lichchieuinsert JOIN cumrap ON cumrap.cid = cumrapvalichchieuinsert.cumrap JOIN phiminsertvalichchieuinsert ON cumrapvalichchieuinsert.lichchieuinsert = phiminsertvalichchieuinsert.lichchieuinsert WHERE cumrap.cid = ? AND phiminsertvalichchieuinsert.phiminsert = ?', [result1.cumrap, result0.maPhim], async (error, results2, fields) => {
+                                if (error) throw error;
+                                let lichChieuPhim = [];
+                                for (const result2 of results2){
+                                    lichChieuPhim.push({
+                                        "maLichChieu": result2.maLichChieu,
+                                        "maRap": result2.maRap,
+                                        "tenRap": result2.tenRap,
+                                        "ngayChieuGioChieu": result2.ngayChieuGioChieu,
+                                        "giaVe": result2.giaVe,
+                                        "thoiLuong": result2.thoiLuong
+                                    })
+                                }
+                                const cumrap = {
+                                    "lichChieuPhim": lichChieuPhim,
+                                    "maCumRap": result1.maCumRap,
+                                    "tenCumRap": result1.tenCumRap,
+                                    "hinhAnh": null
+                                }
+                                cumRapChieu.push(cumrap)
+                                resolve(cumRapChieu);
+                            });
+                        })
+                    }
+                    const hethong = {
+                        "cumRapChieu": cumRapChieu,
+                        "maHeThongRap": results1[0].maHeThongRap,
+                        "tenHeThongRap": results1[0].tenHeThongRap,
+                        "logo": results1[0].logo
+                    }
+                    heThongRapChieu.push(hethong)
+                    resolve(heThongRapChieu);
+                });
+            })
+        }
+        const final = {
+            "heThongRapChieu": heThongRapChieu,
+            "maPhim": results0[0].maPhim,
+            "tenPhim": results0[0].tenPhim,
+            "biDanh": results0[0].biDanh,
+            "trailer": results0[0].trailer,
+            "hinhAnh": results0[0].hinhAnh,
+            "moTa": results0[0].moTa,
+            "maNhom": "GP09",
+            "ngayKhoiChieu": results0[0].ngayKhoiChieu,
+            "danhGia": results0[0].danhGia
+        }
+        return res.send(final)
+    });
+});
 
 // quan li nguoi dung
 
@@ -120,3 +290,223 @@ app.delete('/api/QuanLyNguoiDung/XoaNguoiDung', function (req, res) {
     });
 });
 
+// QuanLyPhim
+
+app.get('/api/QuanLyPhim/LayDanhSachPhim', function (req, res) {
+    dbConn.query('SELECT * FROM phiminsert', [], function (error, results, fields) {
+        if (error) throw error;
+        return res.send(results);
+    });
+});
+
+app.get('/api/QuanLyPhim/LayThongTinPhim', function (req, res) {
+    dbConn.query('SELECT * FROM phiminsert JOIN phiminsertvalichchieuinsert ON phiminsert.maPhim = phiminsertvalichchieuinsert.phiminsert JOIN lichchieuinsert ON lichchieuinsert.maLichChieu = phiminsertvalichchieuinsert.lichchieuinsert WHERE phiminsert.maPhim = ?', [req.query.MaPhim], async (error, results0, fields) => {
+        if (error) throw error;
+        let lichchieu = [];
+        for (const result0 of results0){
+            lichchieu = await new Promise((resolve, reject) => {
+                dbConn.query('SELECT * FROM lichchieuinsert JOIN cumrapvalichchieuinsert ON lichchieuinsert.maLichChieu = cumrapvalichchieuinsert.lichchieuinsert JOIN cumrap ON cumrap.id = cumrapvalichchieuinsert.cumrap WHERE lichchieuinsert.maLichChieu = ?', [result0.maLichChieu], async (error, results1, fields) => {
+                    if (error) throw error;
+                    let thongtinrap = {}
+                    for (const result1 of results1){
+                        thongtinrap = await new Promise((resolve, reject) => {
+                            dbConn.query('SELECT * FROM danhsachrap JOIN cumrap ON danhsachrap.maCumRap = cumrap.id JOIN hethongrapvacumrap ON cumrap.id = hethongrapvacumrap.cumrap JOIN hethongrap ON hethongrap.id = hethongrapvacumrap.hethongrap WHERE danhsachrap.maRap = ?', [result1.maRap], async (error, results2, fields) => {
+                                if (error) throw error;
+                                thongtinrap = {
+                                    "maRap": parseInt(results2[0].maRap),
+                                    "tenRap": results2[0].tenRap,
+                                    "maCumRap": results2[0].maCumRap,
+                                    "tenCumRap": results2[0].tenCumRap,
+                                    "maHeThongRap": results2[0].maHeThongRap,
+                                    "tenHeThongRap": results2[0].tenHeThongRap
+                                }
+                                resolve(thongtinrap)
+                            });
+                        })
+                        const val = {
+                            "thongTinRap": thongtinrap,
+                            "maLichChieu": result1.maLichChieu,
+                            "maRap": result1.maRap,
+                            "maPhim": result0.maPhim,
+                            "tenPhim": result0.tenPhim,
+                            "ngayChieuGioChieu": result1.ngayChieuGioChieu,
+                            "giaVe": result1.giaVe,
+                            "thoiLuong": result1.thoiLuong
+                        }
+                        lichchieu.push(val)
+                    }
+                    resolve(lichchieu);
+                });
+            })
+        }
+        const final = {
+            lichchieu: lichchieu,
+            "maPhim": results0[0].maPhim,
+            "tenPhim": results0[0].tenPhim,
+            "biDanh": results0[0].biDanh,
+            "trailer": results0[0].trailer,
+            "hinhAnh": results0[0].hinhAnh,
+            "moTa": results0[0].moTa,
+            "maNhom": "GP09",
+            "ngayKhoiChieu": results0[0].ngayKhoiChieu,
+            "danhGia": results0[0].danhGia
+        }
+        return res.send(final)
+    });
+});
+
+// QuanLyDatVe
+
+app.get('/api/QuanLyDatVe/LayDanhSachPhongVe', function (req, res) {
+    dbConn.query('SELECT * FROM lichchieuinsert JOIN phiminsertvalichchieuinsert ON lichchieuinsert.maLichChieu = phiminsertvalichchieuinsert.lichchieuinsert JOIN phiminsert ON phiminsert.maPhim = phiminsertvalichchieuinsert.phiminsert JOIN cumrapvalichchieuinsert ON lichchieuinsert.maLichChieu = cumrapvalichchieuinsert.lichchieuinsert JOIN cumrap ON cumrap.cid = cumrapvalichchieuinsert.cumrap WHERE maLichChieu = ?', [req.query.MaLichChieu], async (error, results, fields) => {
+        if (error) throw error;
+        let danhSachGhe = Array.apply(null, Array(160)).map(function () {})
+        danhSachGhe = await new Promise((resolve, reject) => {
+            dbConn.query('SELECT * FROM datve WHERE maLichChieu = ?', [req.query.MaLichChieu], async (error, results1, fields) => {
+                if (error) throw error;
+                for(const result1 of results1){
+                    danhSachGhe[result1.tenGhe] = {
+                        "maGhe": result1.maGhe,
+                        "tenGhe": result1.tenGhe,
+                        "maRap": result1.maRap,
+                        "loaiGhe": result1.loaiGhe,
+                        "stt": result1.tenGhe,
+                        "giaVe": result1.giaVe,
+                        "daDat": true,
+                        "taiKhoanNguoiDat": result1.taiKhoanNguoiDat
+                    }
+                }
+                resolve(danhSachGhe)
+            });
+        })
+        for(let i = 0; i < 160; i++){
+            if (danhSachGhe[i] === undefined){
+                danhSachGhe[i] = {
+                    "maGhe": i,
+                    "tenGhe": i > 9 ? String(i) : "0" + String(i),
+                    "maRap": results[0].maRap,
+                    "loaiGhe": i > 44 && i < 90 ? "Vip" : "Thuong",
+                    "stt": i > 9 ? String(i) : "0" + String(i),
+                    "giaVe": i > 44 && i < 90 ? results[0].giaVe + 15000 : results[0].giaVe,
+                    "daDat": false,
+                    "taiKhoanNguoiDat": null
+                }
+            }
+        }
+        return res.send({
+            "thongTinPhim": {
+                "maLichChieu": results[0].maLichChieu,
+                "tenCumRap": results[0].tenCumRap,
+                "tenRap": results[0].tenRap,
+                "diaChi": results[0].diaChi,
+                "tenPhim": results[0].tenPhim,
+                "hinhAnh": results[0].hinhAnh,
+                "ngayChieu": results[0].ngayChieuGioChieu,
+                "gioChieu": results[0].ngayChieuGioChieu
+            },
+            "danhSachGhe": danhSachGhe
+        });
+    });
+});
+
+app.post('/api/QuanLyDatVe/DatVe', async (req, res) => {
+    for (const ve of req.body.danhSachVe){
+        await new Promise((resolve, reject) => {
+            dbConn.query("INSERT INTO datve SET ? ", { 
+                tenGhe: ve.maGhe,
+                loaiGhe: ve.giaVe > 75000 ? "Vip" : "Thuong",
+                giaVe: ve.giaVe,
+                taiKhoanNguoiDat: req.body.taiKhoanNguoiDung,
+                maLichChieu: req.body.maLichChieu, 
+            }, function (error, results, fields) {
+                if (error) throw error;
+            });
+            resolve();
+        })
+    }
+    return res.send("Success");
+});
+
+app.post('/api/QuanLyDatVe/TaoLichChieu', async (req, res) => {
+    dbConn.query("INSERT INTO lichchieuinsert SET ? ", { 
+        ngayChieuGioChieu: req.body.ngayChieuGioChieu,
+        maRap: req.body.maRap,
+        tenRap: req.body.tenRap,
+        giaVe: req.body.giaVe, 
+        thoiLuong: 120
+    }, function (error, results, fields) {
+        if (error) throw error;
+        dbConn.query("INSERT INTO phiminsertvalichchieuinsert SET ? ", { 
+            phiminsert: req.body.maPhim,
+            lichchieuinsert : results.insertId,
+        }, function (error, results0, fields) {
+            if (error) throw error;
+        });
+        dbConn.query("SELECT * FROM cumrap JOIN hethongrapvacumrap ON cumrap.cid = hethongrapvacumrap.cumrap WHERE tenCumRap = ?",[req.body.cumRap], function (error, results1, fields) {
+            if (error) throw error;
+            dbConn.query("INSERT INTO cumrapvalichchieuinsert SET ? ", { 
+                cumrap: results1[0].cid,
+                lichchieuinsert : results.insertId,
+            }, function (error, results2, fields) {
+                if (error) throw error;
+                console.log(results1[0].hethongrap);
+                dbConn.query("SELECT * FROM hethongrapvaphim WHERE maHeThongRap = ? AND maPhim = ?",[results1[0].hethongrap, req.body.maPhim], function (error, results3, fields) {
+                    if (error) throw error;
+                    if (!(results3.length > 0)){
+                        dbConn.query("INSERT INTO hethongrapvaphim SET ? ", { 
+                            maHeThongRap: results1[0].hethongrap,
+                            maPhim: req.body.maPhim,
+                        }, function (error, results0, fields) {
+                            if (error) throw error;
+                        });
+                    }
+                });
+            });
+        });
+        return res.send("Success");
+    });
+});
+
+// QuanLyPhim
+
+app.post('/api/QuanLyPhim/ThemPhim', async (req, res) => {
+    const final = await new Promise((resolve, reject) => {
+        dbConn.query("INSERT INTO phiminsert SET ? ", { 
+            "tenPhim": req.body.tenPhim,
+            "biDanh": req.body.biDanh,
+            "trailer": req.body.trailer,
+            "hinhAnh": req.body.hinhAnh,
+            "moTa": req.body.moTa,
+            "maNhom": req.body.maNhom,
+            "ngayKhoiChieu": req.body.ngayKhoiChieu,
+            "danhGia": req.body.danhGia
+        }, function (error, results, fields) {
+            if (error) throw error;
+            resolve(res.send("Success"));
+        });
+    })
+    return final;
+});
+
+app.post('/api/QuanLyPhim/CapNhatPhim', async (req, res) => {
+    const final = await new Promise((resolve, reject) => {
+        dbConn.query("UPDATE phiminsert SET ? WHERE maPhim = ?", [{ 
+            "tenPhim": req.body.tenPhim,
+            "biDanh": req.body.biDanh,
+            "trailer": req.body.trailer,
+            "hinhAnh": req.body.hinhAnh,
+            "moTa": req.body.moTa,
+            "maNhom": req.body.maNhom,
+            "ngayKhoiChieu": req.body.ngayKhoiChieu,
+            "danhGia": req.body.danhGia
+        }, req.body.maPhim], function (error, results, fields) {
+            if (error) throw error;
+            resolve(res.send("Success"));
+        });
+    })
+    return final;
+});
+
+app.post('/api/QuanLyPhim/ThemPhimUploadHinh', async (req, res) => {
+    console.log(req);
+});
